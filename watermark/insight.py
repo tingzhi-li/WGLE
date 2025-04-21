@@ -37,10 +37,10 @@ def insight3(args):
     os.makedirs(os.path.dirname(filename), exist_ok=True)
     df.to_csv(filename, index=False)
 
-    y_w = model_w(trigger.x, trigger.edge_index).softmax(dim=1).detach().cpu().numpy()
-    ari = adjusted_rand_score(np.argmax(y_w, axis=1), trigger.y.cpu().numpy())
+    y_w = model_w(train_data.x, train_data.edge_index).softmax(dim=1).detach().cpu().numpy()
+    ari = adjusted_rand_score(np.argmax(y_w, axis=1), train_data.y.cpu().numpy())
     tsne_results_w = tsne.fit_transform(y_w)
-    tsne_results_w = np.hstack((tsne_results_w, trigger.y.detach().cpu().numpy().reshape(-1, 1)))
+    tsne_results_w = np.hstack((tsne_results_w, train_data.y.detach().cpu().numpy().reshape(-1, 1)))
     df = pd.DataFrame(tsne_results_w, columns=['Dimension 1', 'Dimension 2', 'Class'])
     df['ARI'] = ari
     df.to_csv(args.results_path + 'insight3/' + args.dataset + str(args.setting) + '_tsne_w.csv', index=False)
