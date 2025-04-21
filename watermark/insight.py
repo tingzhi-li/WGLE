@@ -30,7 +30,7 @@ def insight3(args):
     y_o = model_o(train_data.x, train_data.edge_index).softmax(dim=1).detach().cpu().numpy()
     ari = adjusted_rand_score(np.argmax(y_o, axis=1), train_data.y.cpu().numpy())
     tsne_results_o = tsne.fit_transform(y_o)
-    tsne_results_o = np.hstack((tsne_results_o, trigger.y.detach().cpu().numpy().reshape(-1, 1)))
+    tsne_results_o = np.hstack((tsne_results_o, train_data.y.detach().cpu().numpy().reshape(-1, 1)))
     df = pd.DataFrame(tsne_results_o, columns=['Dimension 1', 'Dimension 2', 'Class'])
     df['ARI'] = ari
     filename = args.results_path + 'insight3/' + args.dataset + str(args.setting) + '_tsne_o.csv'
