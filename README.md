@@ -1,4 +1,3 @@
-![image](https://github.com/user-attachments/assets/58df230f-ab24-4c84-a144-d73998c7406d)
 # WGLE: Backdoor-free and Multi-bit Black-box Watermarking for Graph Neural Networks
 
 
