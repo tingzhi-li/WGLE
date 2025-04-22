@@ -23,7 +23,7 @@ def assess_experiments(args):
                 val_acc = test(model, val_data)
                 test_acc = test(model, test_data)
                 print(f'Original model is training... Epoch: {epoch:03d}, Loss:{loss:.4f}, Train: {train_acc:.4f}, Val:{val_acc:.4f}, Test: {test_acc:.4f}')
-            torch.save(model, model_name)
+        torch.save(model, model_name)
     print('-----------------------------------------------------------')
 
     model_i = load_model(num_features, num_labels, args)
