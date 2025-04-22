@@ -25,10 +25,14 @@ def assess_experiments(args):
                 print(f'Original model is training... Epoch: {epoch:03d}, Loss:{loss:.4f}, Train: {train_acc:.4f}, Val:{val_acc:.4f}, Test: {test_acc:.4f}')
             torch.save(model, model_name)
     print('-----------------------------------------------------------')
+
     model_i = load_model(num_features, num_labels, args)
     optimizer = torch.optim.Adam(model_i.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     for epoch in range(args.epochs):
         loss = train(model_i, train_data, optimizer)
+        test_acc = test(model_i, test_data)
+        if epoch % 100 == 0:
+            print(f'Independently model is training... Epoch: {epoch:03d}, Loss:{loss:.4f}, Test: {test_acc:.4f}')
     
     model_w, wm, wmk, trigger, model_i = setting(copy.deepcopy(model), copy.deepcopy(model_i), train_data, val_data, test_data, args)
 
