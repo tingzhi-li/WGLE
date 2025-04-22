@@ -136,4 +136,4 @@ results/
 - OVA: Ownership Verification accuracy
 - FPR: Ownership Verification false positive rate
 - Dimension 1, Dimension 2,	Label, and ARI in Insight3: Each line corresponds each node. "Dimension 1" and "Dimension 2" are the first and second coordinates of each node's 2D t-SNE projection. "Label" is its ground-truth label. "ARI" is Adjusted Rand Index for all node predictions.
-- 'LDDE', 'Label': 'LDDE' is the LDDE value for each selected edge. "Label" denotes the assigned value: "0" for (-), "1" for (+).
+- LDDE, Label in Insight2: 'LDDE' is the LDDE value for each selected edge. "Label" denotes the assigned value: "0" for (-), "1" for (+).
