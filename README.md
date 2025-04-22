@@ -1,4 +1,4 @@
-
+![image](https://github.com/user-attachments/assets/58df230f-ab24-4c84-a144-d73998c7406d)
 # WGLE: Backdoor-free and Multi-bit Black-box Watermarking for Graph Neural Networks
 
 
@@ -135,3 +135,5 @@ results/
 - Mw: the watermarked model
 - OVA: Ownership Verification accuracy
 - FPR: Ownership Verification false positive rate
+- Dimension 1, Dimension 2,	Label, and ARI in Insight3: Each line corresponds each node. "Dimension 1" and "Dimension 2" are the first and second coordinates of each node's 2D t-SNE projection. "Label" is its ground-truth label. "ARI" is Adjusted Rand Index for all node predictions.
+- 'LDDE', 'Label': 'LDDE' is the LDDE value for each selected edge. "Label" denotes the assigned value: "0" for (-), "1" for (+).
