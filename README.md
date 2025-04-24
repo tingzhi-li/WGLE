@@ -103,11 +103,11 @@ We list the key hyper-parameters below, including their explanations and availab
 python main.py
 ```
 
-We run all models, datasets, and Settings 1, 2, and 3 in a single pass within `main.py`.  
+We run all models, datasets, and Settings I, II, and III in a single pass within `main.py`.  
 You can modify `main.py` as needed.
 
 `model.py` contains all the model architectures used in our work, and `dataload.py` stores all the datasets we used.  
-If you wish to try other datasets, please modify these files accordingly.
+If you wish to try other datasets or models, please modify these files accordingly.
 
 ```
 model.py
