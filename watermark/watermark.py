@@ -133,7 +133,7 @@ def watermark_embedding_1(model_o, train_data, val_data, test_data, wm, wk, trig
         if epoch % 20 == 0:
             test_acc = test(model_w, test_data)
             bcr = watermark_verification(model_w, watermark, wk, trigger)
-            print(f'The watermarked model is generated. Epoch:{epoch}, Loss1:{loss1:.4f}, Loss2:{loss2:.4f}, Test_acc:{test_acc:.4f}, BCR:{bcr}')
+            print(f'The watermarked model is generated. Epoch:{epoch}, Loss1:{loss1:.4f}, Loss2:{loss2:.4f}, Test_acc:{test_acc:.4f}, HMS:{bcr}')
             if (bcr > 0.99) & (epoch >= 100):
                 return model_w
 
@@ -182,7 +182,7 @@ def watermark_embedding_2(model_o, train_data, val_data, test_data, wm, wk, trig
         if epoch % 20 == 0:
             bcr = watermark_verification(model_w, watermark, wk, trigger)
             test_acc = test(model_w, test_data)
-            print(f'The watermarked model is generated. Epoch:{epoch}, Loss1:{loss1:.4f}, Loss2:{loss2:.4f}, Test_acc:{test_acc:.4f}, BCR:{bcr}')
+            print(f'The watermarked model is generated. Epoch:{epoch}, Loss1:{loss1:.4f}, Loss2:{loss2:.4f}, Test_acc:{test_acc:.4f}, HMS:{bcr}')
             if (bcr > 0.99) & (epoch>=100):
                 return model_w
 
