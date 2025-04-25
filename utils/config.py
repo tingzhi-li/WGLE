@@ -20,7 +20,7 @@ def parse_args():
     parser.add_argument('--weight_decay', type=float, default=1e-4)
     parser.add_argument('--trigger_epochs', type=int, default=201)
     parser.add_argument('--trigger_lr', type=float, default=1e-4)
-    parser.add_argument('--wm_lr', type=float, default=1e-4)
+    parser.add_argument('--wm_lr', type=float, default=5e-5)
 
     parser.add_argument('--setting', type=int, default=1)
     parser.add_argument('--max_epochs', type=int, default=501)
