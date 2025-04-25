@@ -112,7 +112,7 @@ def trigger_generation(model_o, edge_index, args):
 
 def watermark_embedding_1(model_o, train_data, val_data, test_data, wm, wk, trigger, args):
     model_w = copy.deepcopy(model_o)
-    optimizer_model = torch.optim.Adam(model_w.parameters(), lr=args.lr/2, weight_decay=args.weight_decay)
+    optimizer_model = torch.optim.Adam(model_w.parameters(), lr=args.wm_lr, weight_decay=args.weight_decay)
     watermark = wm
     wm = wm.to(torch.float32)
     model_w.eval()
@@ -155,7 +155,7 @@ def watermark_embedding_2(model_o, train_data, val_data, test_data, wm, wk, trig
     data_x.requires_grad_(True)
     data_edge_index = barabasi_albert_graph(len(data_x),1).to(device)
     optimizer_data = torch.optim.Adam([data_x], lr=args.lr/2)
-    optimizer_model = torch.optim.Adam(model_w.parameters(), lr=args.lr/2, weight_decay=args.weight_decay)
+    optimizer_model = torch.optim.Adam(model_w.parameters(), lr=args.wm_lr, weight_decay=args.weight_decay)
     model_w.eval()
 
     for epoch in range(args.max_epochs):
