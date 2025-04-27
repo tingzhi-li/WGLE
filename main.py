@@ -16,7 +16,7 @@ def assess_experiments(args):
         os.makedirs(os.path.dirname(model_name), exist_ok=True)
         model = load_model(num_features, num_labels, args)
         optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
-        for epoch in range(args.epochs):
+        for epoch in range(args.epochs*2):
             loss = train(model, train_data, optimizer)
             if epoch % 100 == 0:
                 train_acc = test(model, train_data)
