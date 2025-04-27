@@ -2,7 +2,7 @@ import torch
 import argparse
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-MINIMUM = 1e-16
+MINIMUM = 1e-8
 SEED = 42
 
 def parse_args():
