@@ -23,7 +23,7 @@ def parse_args():
     parser.add_argument('--wm_lr', type=float, default=5e-5)
 
     parser.add_argument('--setting', type=int, default=1)
-    parser.add_argument('--max_epochs', type=int, default=201)
+    parser.add_argument('--max_epochs', type=int, default=301)
     parser.add_argument('--wm_epochs', type=int, default=501)
     parser.add_argument('--n_wm', type=int, default=200)
     parser.add_argument('--coe', type=float, default=1.0)
