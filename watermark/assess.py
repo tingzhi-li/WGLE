@@ -74,7 +74,7 @@ def setting1(model_o, model_ind, train_data, val_data, test_data, args):
     y = model_w(test_data.x, test_data.edge_index).argmax(dim=1)
     misclass = ((y == 2) & (test_data.y != 2)).sum() / (test_data.y != 2).sum().item()
     print(f'Accuracy on Model_w: Train: {train_acc:.4f}, Val:{val_acc:.4f}, Test: {test_acc:.4f}')
-    print(f'BCR on Model_w: {hms:.4f}')
+    print(f'HMS on Model_w: {hms:.4f}')
     print(f'Time of Model_w: {sub_time:.4f}')
     print(f'misclassification rate: {misclass:.4f}')
     with open(filename, 'a') as file:
