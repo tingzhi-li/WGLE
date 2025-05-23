@@ -24,6 +24,8 @@ def insight3(args):
     model = copy.deepcopy(model_o)
     model.eval()
     # embedding watermark
+    results_path = copy.deepcopy(args.results_path)
+    args.results_path = results_path + 'insight3/'
     model_w, wm, wmk, trigger, _ = setting(model, model, train_data, val_data, test_data, args)
     model_w.eval()
 
@@ -44,6 +46,7 @@ def insight3(args):
     df = pd.DataFrame(tsne_results_w, columns=['Dimension 1', 'Dimension 2', 'Label'])
     df['ARI'] = ari
     df.to_csv(args.results_path + 'insight3/' + args.dataset + str(args.setting) + '_tsne_w.csv', index=False)
+    args.results_path = results_path
 
 
 def insight2(args):
@@ -52,7 +55,10 @@ def insight2(args):
     model = copy.deepcopy(model_o)
     model.eval()
 
+    results_path = copy.deepcopy(args.results_path)
+    args.results_path = results_path + 'insight2/'
     model_w, wm, wmk, trigger, _ = setting(model, model, train_data, val_data, test_data, args)
+    
     y = model(trigger.x, trigger.edge_index).softmax(dim=1)
     v = LDDE(y, trigger.x, trigger.edge_index[:, wmk]).flatten()
     label = wm.detach().cpu().numpy()
@@ -75,6 +81,7 @@ def insight2(args):
     filename = args.results_path + 'insight2/' + args.dataset + str(args.setting) + '_w.csv'
     os.makedirs(os.path.dirname(filename), exist_ok=True)
     df.to_csv(filename, index=False)
+    args.results_path = results_path
 
 
 def watermark_collision(args):
@@ -128,7 +135,9 @@ def watermark_collision(args):
 
 
 def multibit(args):
-    filename = args.results_path + 'multibit/' + args.dataset + '/setting' + str(args.setting) + '.csv'
+    results_path = copy.deepcopy(args.results_path)
+    args.results_path = results_path + 'multibit/'
+    filename = args.results_path + args.dataset + '/setting' + str(args.setting) + 'multibit.csv'
     os.makedirs(os.path.dirname(filename), exist_ok=True)
     headers = ['Nw','Test CE','Test BCE','Pruning CE','Pruning BCE','Fine-tuning CE',' Fine-tuning BCE']
     if not os.path.isfile(filename):
@@ -185,7 +194,7 @@ def multibit(args):
             writer.writerow(aline)
 
     args.n_wm = n_wm_default
-
+    args.results_path = results_path
 
 
 
@@ -194,5 +203,3 @@ def assess_insight(args):
     insight3(args)
     multibit(args)
     watermark_collision(args)
-
-
