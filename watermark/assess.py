@@ -168,7 +168,7 @@ def setting3(model_o, model_ind, train_data, val_data, test_data, args):
     start_time = time.time()
     wm = watermark_string_generation(args)
     wmk = watermark_key_generation(model_o, trigger, wm, args)
-    model_w = watermark_embedding_1(model_o, train_data, val_data, test_data, wm, wmk, trigger, args)
+    model_w = watermark_embedding_2(model_o, train_data, val_data, test_data, wm, wmk, trigger, args)
     end_time = time.time()
     sub_time = end_time - start_time
 
