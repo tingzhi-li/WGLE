@@ -8,8 +8,8 @@ import torch_geometric
 from torch_geometric.utils import barabasi_albert_graph
 from torch_geometric.data import Data
 from sklearn.cluster import DBSCAN
-from utils.models import GCNv2
-from utils.config import device, MINIMUM
+from utils.models import GCNv2, GIN
+from utils.config import MINIMUM
 from utils.utils import test
 
 
@@ -23,7 +23,7 @@ def LDDE(y_hat, x, edge):
 
 
 
-def watermark_key_generation(model_o, trigger, wm, args):
+def watermark_key_generation(model_o, trigger, args):
     model_o.eval()
     y_hat = model_o(trigger.x, trigger.edge_index).softmax(dim=1)
 
@@ -44,7 +44,7 @@ def watermark_key_generation(model_o, trigger, wm, args):
 
 
 def watermark_string_generation(args):
-    watermark = torch.randint(0, 2, (args.n_wm,), dtype=torch.uint8).to(device)
+    watermark = torch.randint(0, 2, (args.n_wm,), dtype=torch.uint8).to(args.device)
     return watermark
 
 
@@ -55,9 +55,11 @@ def trigger_generation(model_o, edge_index, args):
     num_nodes = edge_index.max() + 1
     if isinstance(model_o, GCNv2):
         num_feat = model_o.fc.in_channels
+    elif isinstance(model_o, GIN):
+        num_feat = model_o.layers[0].nn.in_channels
     else:
         num_feat = model_o.layers[0].in_channels
-    x = F.hardtanh(torch.randn((num_nodes, num_feat))).to(device)
+    x = F.hardtanh(torch.randn((num_nodes, num_feat))).to(args.device)
     x.requires_grad_(True)
     loss_copy = 1000
     x_copy = None
@@ -84,14 +86,14 @@ def trigger_generation(model_o, edge_index, args):
     torch.cuda.empty_cache()
     node2vec = torch_geometric.nn.Node2Vec(edge_index, embedding_dim=128, walk_length=20, context_size=10,
                                                walks_per_node=10, num_negative_samples=1, p=1.0, q=1.0,
-                                               sparse=True, ).to(device)
+                                               sparse=True, ).to(args.device)
     loader = node2vec.loader(batch_size=128, shuffle=True, num_workers=4)
     optimizer = torch.optim.SparseAdam(list(node2vec.parameters()), lr=args.trigger_lr)
     for epoch in range(args.trigger_epochs//10):
         node2vec.train()
         for pos_rw, neg_rw in loader:
             optimizer.zero_grad()
-            loss = node2vec.loss(pos_rw.to(device), neg_rw.to(device))
+            loss = node2vec.loss(pos_rw.to(args.device), neg_rw.to(args.device))
             loss.backward()
             optimizer.step()
         if epoch % 5 == 0:
@@ -102,17 +104,18 @@ def trigger_generation(model_o, edge_index, args):
     edge_embeddings = edge_embeddings.detach().cpu().numpy()
     dbscan = DBSCAN(eps=1.5, min_samples=10)
     edge_labels = dbscan.fit_predict(edge_embeddings)
-    edge_attr = torch.from_numpy(edge_labels == -1).to(device)
+    edge_attr = torch.from_numpy(edge_labels == -1).to(args.device)
     
-    trigger = Data(x=x, edge_index=edge_index, edge_attr=edge_attr).to(device)
+    trigger = Data(x=x, edge_index=edge_index, edge_attr=edge_attr).to(args.device)
     print(trigger)
     return trigger
 
 
 
-def watermark_embedding_1(model_o, train_data, val_data, test_data, wm, wk, trigger, args):
+def watermark_embedding_1(model_o, data, wm, wk, trigger, args):
     model_w = copy.deepcopy(model_o)
     optimizer_model = torch.optim.Adam(model_w.parameters(), lr=args.wm_lr, weight_decay=args.weight_decay)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_model, T_max=128, eta_min=1e-5)
     watermark = wm
     wm = wm.to(torch.float32)
     model_w.eval()
@@ -122,40 +125,51 @@ def watermark_embedding_1(model_o, train_data, val_data, test_data, wm, wk, trig
         optimizer_model.zero_grad()
         trigger_y = model_w(trigger.x, trigger.edge_index).softmax(dim=1)
 
-        y = model_w(train_data.x, train_data.edge_index)
-        loss1 = F.cross_entropy(y, train_data.y)
+        if args.paradigm == 'transductive':
+            y = model_w(data.x, data.edge_index)
+            loss1 = F.cross_entropy(y[data.train_mask], data.y[data.train_mask])
+        elif args.paradigm == 'inductive':
+            y = model_w(data[0].x, data[0].edge_index)
+            loss1 = F.cross_entropy(y, data[0].y)
+        else:
+            raise ValueError('Error: Wrong paradigm!')
+
         v = LDDE(trigger_y, trigger.x, trigger.edge_index[:, wk])
         loss2 = F.binary_cross_entropy_with_logits(v.flatten(), wm)
         loss = loss1 + args.coe * loss2
         loss.backward()
         optimizer_model.step()
+        scheduler.step()
 
         if epoch % 20 == 0:
-            test_acc = test(model_w, test_data)
+            train_acc, test_acc = test(model_w, data, args)
             bcr = watermark_verification(model_w, watermark, wk, trigger)
-            print(f'The watermarked model is generated. Epoch:{epoch}, Loss1:{loss1:.4f}, Loss2:{loss2:.4f}, Test_acc:{test_acc:.4f}, HMS:{bcr}')
+            print(f'The watermarked model is generated. Epoch:{epoch}, Loss1:{loss1:.4f}, Loss2:{loss2:.4f}, Train_acc:{train_acc:.4f}, Test_acc:{test_acc:.4f}, HMS:{bcr}')
             if (bcr > 0.99) & (epoch >= 100):
                 return model_w
 
     return model_w
 
 
-def watermark_embedding_2(model_o, train_data, val_data, test_data, wm, wk, trigger, args):
+def watermark_embedding_2(model_o, data, wm, wk, trigger, args):
     model_w = copy.deepcopy(model_o)
     watermark = wm
     wm = wm.to(torch.float32)
     model_o.eval()
     if isinstance(model_o, GCNv2):
         num_feat = model_o.fc.in_channels
+    elif isinstance(model_o, GIN):
+        num_feat = model_o.layers[0].nn.in_channels
     else:
         num_feat = model_o.layers[0].in_channels
 
     # pseudo graph generation
-    data_x = F.hardtanh(torch.randn((trigger.num_nodes, num_feat))).to(device)
+    data_x = F.hardtanh(torch.randn((trigger.num_nodes, num_feat))).to(args.device)
     data_x.requires_grad_(True)
-    data_edge_index = barabasi_albert_graph(len(data_x),1).to(device)
+    data_edge_index = barabasi_albert_graph(len(data_x),1).to(args.device)
     optimizer_data = torch.optim.Adam([data_x], lr=args.wm_lr)
     optimizer_model = torch.optim.Adam(model_w.parameters(), lr=args.wm_lr, weight_decay=args.weight_decay)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_model, T_max=128, eta_min=1e-5)
     model_w.eval()
 
     for epoch in range(args.max_epochs):
@@ -170,6 +184,7 @@ def watermark_embedding_2(model_o, train_data, val_data, test_data, wm, wk, trig
         loss = loss1 + args.coe * loss2
         loss.backward()
         optimizer_model.step()
+        scheduler.step()
 
         if epoch % 5 == 0:
             optimizer_data.zero_grad()
@@ -181,8 +196,8 @@ def watermark_embedding_2(model_o, train_data, val_data, test_data, wm, wk, trig
 
         if epoch % 20 == 0:
             bcr = watermark_verification(model_w, watermark, wk, trigger)
-            test_acc = test(model_w, test_data)
-            print(f'The watermarked model is generated. Epoch:{epoch}, Loss1:{loss1:.4f}, Loss2:{loss2:.4f}, Test_acc:{test_acc:.4f}, HMS:{bcr}')
+            train_acc, test_acc = test(model_w, data, args)
+            print(f'The watermarked model is generated. Epoch:{epoch}, Loss1:{loss1:.4f}, Loss2:{loss2:.4f}, Train_acc:{train_acc:.4f}, Test_acc:{test_acc:.4f}, HMS:{bcr}')
             if (bcr > 0.99) & (epoch>=100):
                 return model_w
 
@@ -195,6 +210,6 @@ def watermark_verification(model, wm, wk, trigger):
     trigger_y = model(trigger.x, trigger.edge_index).softmax(dim=1)
     v = LDDE(trigger_y, trigger.x, trigger.edge_index[:, wk]).flatten()
     wme = torch.where(v < 0, 0, 1)
-    bcr = int ((wme == wm).sum()) / len(wm)
-    return bcr
+    hms = int ((wme == wm).sum()) / len(wm)
+    return hms
 

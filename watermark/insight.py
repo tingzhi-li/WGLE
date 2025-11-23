@@ -19,98 +19,111 @@ from watermark.robust import model_pruning, fine_tuning
 
 def insight3(args):
     tsne = TSNE(n_components=2, random_state=42)
-    train_data, val_data, test_data, num_features, num_labels = load_data(args)
-    model_o = torch.load(args.model_path + args.dataset + '/' + args.model, weights_only=False)
-    model = copy.deepcopy(model_o)
-    model.eval()
+    data = load_data(args)
+    model_o = torch.load(args.model_path + args.dataset + '/' + args.model + '_' + args.paradigm, weights_only=False)
+    model_o.eval()
     # embedding watermark
     results_path = copy.deepcopy(args.results_path)
     args.results_path = results_path + 'insight3/'
-    model_w, wm, wmk, trigger, _ = setting(model, model, train_data, val_data, test_data, args)
+    model_w, wm, wmk, trigger, _ = setting(model_o, None, data, args)
     model_w.eval()
 
-    y_o = model_o(train_data.x, train_data.edge_index).softmax(dim=1).detach().cpu().numpy()
-    ari = adjusted_rand_score(np.argmax(y_o, axis=1), train_data.y.cpu().numpy())
-    tsne_results_o = tsne.fit_transform(y_o)
-    tsne_results_o = np.hstack((tsne_results_o, train_data.y.detach().cpu().numpy().reshape(-1, 1)))
-    df = pd.DataFrame(tsne_results_o, columns=['Dimension 1', 'Dimension 2', 'Label'])
-    df['ARI'] = ari
-    filename = args.results_path + 'insight3/' + args.dataset + str(args.setting) + '_tsne_o.csv'
-    os.makedirs(os.path.dirname(filename), exist_ok=True)
-    df.to_csv(filename, index=False)
+    if args.paradigm == 'transductive':
+        y_o = model_o(data.x, data.edge_index).softmax(dim=1)[data.test_mask]
+        y_o = y_o.detach().cpu().numpy()
+        ari_o = adjusted_rand_score(np.argmax(y_o, axis=1), data.y[data.test_mask].cpu().numpy())
 
-    y_w = model_w(train_data.x, train_data.edge_index).softmax(dim=1).detach().cpu().numpy()
-    ari = adjusted_rand_score(np.argmax(y_w, axis=1), train_data.y.cpu().numpy())
-    tsne_results_w = tsne.fit_transform(y_w)
-    tsne_results_w = np.hstack((tsne_results_w, train_data.y.detach().cpu().numpy().reshape(-1, 1)))
-    df = pd.DataFrame(tsne_results_w, columns=['Dimension 1', 'Dimension 2', 'Label'])
-    df['ARI'] = ari
-    df.to_csv(args.results_path + 'insight3/' + args.dataset + str(args.setting) + '_tsne_w.csv', index=False)
+        y_w = model_w(data.x, data.edge_index).softmax(dim=1)[data.test_mask]
+        y_w = y_w.detach().cpu().numpy()
+        ari_w = adjusted_rand_score(np.argmax(y_w, axis=1), data.y[data.test_mask].cpu().numpy())
+
+        tsne_results_o = tsne.fit_transform(y_o)
+        tsne_results_w = tsne.fit_transform(y_w)
+        tsne_results = np.hstack((data.y[data.test_mask].detach().cpu().numpy().reshape(-1, 1), tsne_results_o, tsne_results_w))
+        df = pd.DataFrame(tsne_results, columns=['label', 'o_dim1', 'o_dim2', 'w_dim1', 'w_dim2'])
+        df['o_ARI'] = ari_o
+        df['w_ARI'] = ari_w
+
+        filename = args.results_path + args.dataset + '_' + args.paradigm + '_setting' + str(args.setting) + '_tsne.csv'
+        os.makedirs(os.path.dirname(filename), exist_ok=True)
+        df.to_csv(filename, index=False)
+
+    elif args.paradigm == 'inductive':
+        y_o = model_o(data[2].x, data[2].edge_index).softmax(dim=1)
+        y_o = y_o.detach().cpu().numpy()
+        ari_o = adjusted_rand_score(np.argmax(y_o, axis=1), data[2].y.cpu().numpy())
+
+        y_w = model_w(data[2].x, data[2].edge_index).softmax(dim=1)
+        y_w = y_w.detach().cpu().numpy()
+        ari_w = adjusted_rand_score(np.argmax(y_w, axis=1), data[2].y.cpu().numpy())
+
+        tsne_results_o = tsne.fit_transform(y_o)
+        tsne_results_w = tsne.fit_transform(y_w)
+        tsne_results = np.hstack((data[2].y.detach().cpu().numpy().reshape(-1, 1), tsne_results_o, tsne_results_w))
+        df = pd.DataFrame(tsne_results, columns=['label', 'o_dim1', 'o_dim2', 'w_dim1', 'w_dim2'])
+        df['o_ARI'] = ari_o
+        df['w_ARI'] = ari_w
+
+        filename = args.results_path + args.dataset + '_' + args.paradigm + '_setting' + str(args.setting) + '_tsne.csv'
+        os.makedirs(os.path.dirname(filename), exist_ok=True)
+        df.to_csv(filename, index=False)
+
+    else:
+        raise ValueError('Error: Wrong paradigm!')
+
     args.results_path = results_path
 
 
 def insight2(args):
-    train_data, val_data, test_data, num_features, num_labels = load_data(args)
-    model_o = torch.load(args.model_path + args.dataset + '/' + args.model, weights_only=False)
-    model = copy.deepcopy(model_o)
-    model.eval()
-
+    data = load_data(args)
+    model_o = torch.load(args.model_path + args.dataset + '/' + args.model + '_' + args.paradigm, weights_only=False)
+    model_o.eval()
+    # embedding watermark
     results_path = copy.deepcopy(args.results_path)
     args.results_path = results_path + 'insight2/'
-    model_w, wm, wmk, trigger, _ = setting(model, model, train_data, val_data, test_data, args)
-    
-    y = model(trigger.x, trigger.edge_index).softmax(dim=1)
-    v = LDDE(y, trigger.x, trigger.edge_index[:, wmk]).flatten()
-    label = wm.detach().cpu().numpy()
-    hamming_similarity = 1 - hamming_loss(label, (v > 0).int().detach().cpu().numpy())
-    v = np.vstack((v.detach().cpu().numpy(), label)).T
-    df = pd.DataFrame(v, columns=['LDDE', 'Label'])
-    df['HMS'] = hamming_similarity
-    filename = args.results_path + 'insight2/' + args.dataset + str(args.setting) + '_o.csv'
-    os.makedirs(os.path.dirname(filename), exist_ok=True)
-    df.to_csv(filename, index=False)
-
+    model_w, wm, wmk, trigger, _ = setting(model_o, None, data, args)
     model_w.eval()
-    y = model_w(trigger.x, trigger.edge_index).softmax(dim=1)
-    v = LDDE(y, trigger.x, trigger.edge_index[:, wmk]).flatten()
-    hamming_similarity = 1 - hamming_loss(label, (v > 0).int().detach().cpu().numpy())
-    v = np.vstack((v.detach().cpu().numpy(), label)).T
-    df = pd.DataFrame(v, columns=['LDDE', 'Label'])
-    df['HMS'] = hamming_similarity
+    wm = wm.detach().cpu().numpy()
 
-    filename = args.results_path + 'insight2/' + args.dataset + str(args.setting) + '_w.csv'
+    y_o = model_o(trigger.x, trigger.edge_index).softmax(dim=1)
+    v_o = LDDE(y_o, trigger.x, trigger.edge_index[:, wmk]).flatten()
+    hms_o = 1 - hamming_loss(wm, (v_o > 0).int().detach().cpu().numpy())
+
+    y_w = model_w(trigger.x, trigger.edge_index).softmax(dim=1)
+    v_w = LDDE(y_w, trigger.x, trigger.edge_index[:, wmk]).flatten()
+    hms_w = 1 - hamming_loss(wm, (v_w > 0).int().detach().cpu().numpy())
+
+    v = np.vstack((wm, v_o.detach().cpu().numpy(), v_w.detach().cpu().numpy())).T
+    df = pd.DataFrame(v, columns=['WM', 'LDDE_o', 'LDDE_w'])
+    df['HMS_o'] = hms_o
+    df['HMS_w'] = hms_w
+
+    filename = args.results_path + args.dataset + '_' + args.paradigm + '_setting' + str(args.setting) + '_ldde.csv'
     os.makedirs(os.path.dirname(filename), exist_ok=True)
     df.to_csv(filename, index=False)
+
     args.results_path = results_path
 
 
 def watermark_collision(args):
-    train_data, val_data, test_data, num_features, num_labels = load_data(args)
+    data = load_data(args)
     model_o = torch.load(args.model_path + args.dataset + '/' + args.model, weights_only=False)
-    model = copy.deepcopy(model_o)
-    model.eval()
+    model_o.eval()
+    # generate trigger
+    results_path = copy.deepcopy(args.results_path)
+    args.results_path = results_path + 'collision/'
+    _, _, wmk, trigger, _ = setting(model_o, None, data, args)
 
-    filename = args.results_path +  'collision/' + args.dataset+ '/setting' + str(args.setting) + '.csv'
-    os.makedirs(os.path.dirname(filename), exist_ok=True)
-    model = copy.deepcopy(model_o)
-    model.eval()
-
-    # embedding watermark
     watermarks = []
     ldde_list = []
-    if args.setting == 1:
-        trigger = train_data
-    else:
-        edge_index = Planetoid(root=args.dataset_path, name='PubMed')[0].edge_index.detach().clone().to(device)
-        trigger = trigger_generation(model_o, edge_index, args)
-
     for i in range(args.model_num):
         wm = watermark_string_generation(args)
-        wmk = watermark_key_generation(model_o, trigger, wm, args)
-        if args.setting == 1 or args.setting == 2:
-            model_w = watermark_embedding_1(model_o, train_data, val_data, test_data, wm, wmk, trigger, args)
+        if args.setting == 1 :
+            model_w = watermark_embedding_1(copy.deepcopy(model_o), data, wm, wmk, trigger, args)
+        elif args.setting == 2 :
+            model_w = watermark_embedding_2(copy.deepcopy(model_o), data, wm, wmk, trigger, args)
         else:
-            model_w = watermark_embedding_2(model_o, train_data, val_data, test_data, wm, wmk, trigger, args)
+            raise ValueError('Error: Wrong setting!')
         model_w.eval()
         y_hat = model_w(trigger.x, trigger.edge_index).softmax(dim=1)
         v = LDDE(y_hat, trigger.x, trigger.edge_index[:, wmk])
@@ -127,6 +140,8 @@ def watermark_collision(args):
         new_line.append((ldde_list == np.roll(watermarks, shift=i, axis=0)).sum(axis=1) / args.n_wm)
     new_line = np.array(new_line).flatten()
     headers = ['HMS']
+    filename = args.results_path + 'collision/' + args.paradigm + '/setting' + str(args.setting) + '/' + args.dataset + '_collision.csv'
+    os.makedirs(os.path.dirname(filename), exist_ok=True)
     if not os.path.isfile(filename):
         with open(filename, mode='w', newline='') as file:
             csv.writer(file).writerow(headers)
@@ -137,57 +152,105 @@ def watermark_collision(args):
 def multibit(args):
     results_path = copy.deepcopy(args.results_path)
     args.results_path = results_path + 'multibit/'
-    filename = args.results_path + args.dataset + '/setting' + str(args.setting) + 'multibit.csv'
+    filename = args.results_path + args.paradigm + '/setting' + str(args.setting) + '/' + args.dataset + '_multibit.csv'
     os.makedirs(os.path.dirname(filename), exist_ok=True)
-    headers = ['Nw','Test CE','Test BCE','Pruning CE','Pruning BCE','Fine-tuning CE',' Fine-tuning BCE']
+    headers = ['Nw', 'Mi HMS', 'Mw HMS', 'Test CE','Test BCE','Pruning CE','Pruning BCE','Fine-tuning CE',' Fine-tuning BCE']
     if not os.path.isfile(filename):
         with open(filename, mode='w', newline='') as file:
             csv.writer(file).writerow(headers)
 
-    train_data, val_data, test_data, num_features, num_labels = load_data(args)
-    model_name = args.model_path + args.dataset + '/' + args.model
+    data = load_data(args)
+    model_name = args.model_path + args.dataset + '/' + args.model + '_' + args.paradigm
     args.random_seed = torch.manual_seed(int(time.time() * 100))
     if os.path.exists(model_name):
         model = torch.load(model_name, weights_only=False)
+    else:
+        raise ValueError('Error: Model not found!')
     n_wm_default = copy.deepcopy(args.n_wm)
-    n_wm = [20, 100, 200, 500]
+    n_wm = [16, 32, 64, 128, 256]
     for nwm in n_wm:
-        args.n_wm = nwm
-        if args.dataset == 'Cora' and args.n_wm == 500:
+        if nwm == 256 and args.dataset == 'Cora':
             continue
+        args.n_wm = nwm
         aline = [args.n_wm]
 
-        setting(copy.deepcopy(model), copy.deepcopy(model), train_data, val_data, test_data, args)
-        model_w, wm, wmk, trigger, _ = setting(copy.deepcopy(model), copy.deepcopy(model), train_data, val_data, test_data,
-                                                         args)
+        model_w, wm, wmk, trigger, model_i = setting(copy.deepcopy(model), copy.deepcopy(model), data, args)
         model_w.eval()
-        y_hat = model_w(test_data.x, test_data.edge_index)
-        CE = F.cross_entropy(y_hat, test_data.y)
-        y_pred = model_w(trigger.x, trigger.edge_index).softmax(dim=1)
-        v = LDDE(y_pred, trigger.x, trigger.edge_index[:, wmk])
-        BCE = F.binary_cross_entropy_with_logits(v.flatten(), wm.to(torch.float32))
-        aline.append(CE.item())
-        aline.append(BCE.item())
+        wm = wm.to(torch.float32)
+        if args.paradigm == 'inductive':
+            y_hat = model_w(data[2].x, data[2].edge_index)
+            #y_hat = y_hat.detach().cpu().numpy()
+            #ari = adjusted_rand_score(np.argmax(y_hat, axis=1), data[2].y.cpu().numpy())
+            ce = F.cross_entropy(y_hat, data[2].y)
+            y_pred = model_w(trigger.x, trigger.edge_index).softmax(dim=1)
+            v = LDDE(y_pred, trigger.x, trigger.edge_index[:, wmk])
+            bce = F.binary_cross_entropy_with_logits(v, wm)
+            hms_i = watermark_verification(model_i, wm, wmk, trigger)
+            hms_w = watermark_verification(model_w, wm, wmk, trigger)
+            aline.append(hms_i)
+            aline.append(hms_w)
+            aline.append(ce.detach().cpu().numpy())
+            aline.append(bce.detach().cpu().numpy())
 
-        model_w2 = model_w
-        # robust
-        model_w = model_pruning(copy.deepcopy(model_w2), 0.7)
-        y_hat = model_w(test_data.x, test_data.edge_index)
-        CE = F.cross_entropy(y_hat, test_data.y)
-        y_pred = model_w(trigger.x, trigger.edge_index).softmax(dim=1)
-        v = LDDE(y_pred, trigger.x, trigger.edge_index[:, wmk])
-        BCE = F.binary_cross_entropy_with_logits(v.flatten(), wm.to(torch.float32))
-        aline.append(CE.item())
-        aline.append(BCE.item())
+            #robust
+            model_w2 = model_pruning(copy.deepcopy(model_w), 0.7)
+            y_hat = model_w2(data[2].x, data[2].edge_index)
+            #ari = adjusted_rand_score(np.argmax(y_hat, axis=1), data[2].y.cpu().numpy())
+            ce = F.cross_entropy(y_hat, data[2].y)
+            y_pred = model_w2(trigger.x, trigger.edge_index).softmax(dim=1)
+            v = LDDE(y_pred, trigger.x, trigger.edge_index[:, wmk])
+            #hms = 1 - hamming_loss(wm.detach().cpu().numpy(), (v > 0).int().detach().cpu().numpy())
+            bce = F.binary_cross_entropy_with_logits(v, wm)
+            aline.append(ce.detach().cpu().numpy())
+            aline.append(bce.detach().cpu().numpy())
 
-        model_w, _, _ = fine_tuning(copy.deepcopy(model_w2), val_data, test_data, wm, wmk, trigger)
-        y_hat = model_w(test_data.x, test_data.edge_index)
-        CE = F.cross_entropy(y_hat, test_data.y)
-        y_pred = model_w(trigger.x, trigger.edge_index).softmax(dim=1)
-        v = LDDE(y_pred, trigger.x, trigger.edge_index[:, wmk])
-        BCE = F.binary_cross_entropy_with_logits(v.flatten(), wm.to(torch.float32))
-        aline.append(CE.item())
-        aline.append(BCE.item())
+            model_w2, _, _ = fine_tuning(copy.deepcopy(model_w), data, wm, wmk, trigger, args)
+            y_hat = model_w2(data[2].x, data[2].edge_index)
+            ce = F.cross_entropy(y_hat, data[2].y)
+            #ari = adjusted_rand_score(np.argmax(y_hat, axis=1), data[2].y.cpu().numpy())
+            y_pred = model_w2(trigger.x, trigger.edge_index).softmax(dim=1)
+            v = LDDE(y_pred, trigger.x, trigger.edge_index[:, wmk])
+            bce = F.binary_cross_entropy_with_logits(v, wm)
+            #hms = 1 - hamming_loss(wm.detach().cpu().numpy(), (v > 0).int().detach().cpu().numpy())
+            aline.append(ce.detach().cpu().numpy())
+            aline.append(bce.detach().cpu().numpy())
+        elif args.paradigm == 'transductive':
+            y_hat = model_w(data.x, data.edge_index)
+            ce = F.cross_entropy(y_hat[data.test_mask], data.y[data.test_mask])
+            #ari = adjusted_rand_score(np.argmax(y_hat, axis=1), data.y[data.test_mask].cpu().numpy())
+            y_pred = model_w(trigger.x, trigger.edge_index).softmax(dim=1)
+            v = LDDE(y_pred, trigger.x, trigger.edge_index[:, wmk])
+            #hms = 1 - hamming_loss(wm.detach().cpu().numpy(), (v > 0).int().detach().cpu().numpy())
+            bce = F.binary_cross_entropy_with_logits(v, wm)
+            hms_i = watermark_verification(model_i, wm, wmk, trigger)
+            hms_w = watermark_verification(model_w, wm, wmk, trigger)
+            aline.append(hms_i)
+            aline.append(hms_w)
+            aline.append(ce.detach().cpu().numpy())
+            aline.append(bce.detach().cpu().numpy())
+
+            # robust
+            model_w2 = model_pruning(copy.deepcopy(model_w), 0.7)
+            y_hat = model_w2(data.x, data.edge_index)
+            ce = F.cross_entropy(y_hat[data.test_mask], data.y[data.test_mask])
+            #ari = adjusted_rand_score(np.argmax(y_hat.softmax(dim=1).detach().cpu().numpy(), axis=1), data[2].y.cpu().numpy())
+            y_pred = model_w2(trigger.x, trigger.edge_index).softmax(dim=1)
+            v = LDDE(y_pred, trigger.x, trigger.edge_index[:, wmk])
+            #hms = 1 - hamming_loss(wm.detach().cpu().numpy(), (v > 0).int().detach().cpu().numpy())
+            bce = F.binary_cross_entropy_with_logits(v, wm)
+            aline.append(ce.detach().cpu().numpy())
+            aline.append(bce.detach().cpu().numpy())
+
+            model_w2, _, _ = fine_tuning(copy.deepcopy(model_w), data, wm, wmk, trigger, args)
+            y_hat = model_w2(data.x, data.edge_index)
+            ce = F.cross_entropy(y_hat[data.test_mask], data.y[data.test_mask])
+            #ari = adjusted_rand_score(np.argmax(y_hat.softmax(dim=1).detach().cpu().numpy(), axis=1), data[2].y.cpu().numpy())
+            y_pred = model_w2(trigger.x, trigger.edge_index).softmax(dim=1)
+            v = LDDE(y_pred, trigger.x, trigger.edge_index[:, wmk])
+            #hms = 1 - hamming_loss(wm.detach().cpu().numpy(), (v > 0).int().detach().cpu().numpy())
+            bce = F.binary_cross_entropy_with_logits(v, wm)
+            aline.append(ce.detach().cpu().numpy())
+            aline.append(bce.detach().cpu().numpy())
 
         with open(filename, "a", newline="", encoding="utf-8") as file:
             writer = csv.writer(file)
@@ -199,7 +262,7 @@ def multibit(args):
 
 
 def assess_insight(args):
-    insight2(args)
-    insight3(args)
+    # insight2(args)
+    # insight3(args)
     multibit(args)
-    watermark_collision(args)
+    # watermark_collision(args)
