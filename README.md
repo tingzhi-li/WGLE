@@ -60,42 +60,39 @@ The core codes of main.py are present as follows.
 
 ```
 if __name__ == '__main__':
-    args = parse_args()
-    datasets = ['Cora', 'DBLP', 'Photo', 'Computers', 'CS', 'Physics']  # datasets
-    models = ['GCNv2', 'SSG', 'SAGE', 'ARMA', 'GEN', 'GTF']  # 'GCNv2', 'SSG', 'SAGE', 'ARMA', 'GEN', 'GTF' # models
+    # our methods
+    datasets = ['Cora', 'DBLP', 'CS', 'Physics', 'Blog', 'Photo']  # 'Cora', 'DBLP', 'CS', 'Physics', 'Blog', 'Photo'
+    models = ['GAT', 'GTF', 'SSG', 'GCNv2', 'ARMA', 'SAGE']  # 'GAT', 'GTF', 'SSG', 'GCNv2', 'ARMA', 'SAGE'
 
-    for i in range(6):
+    args.paradigm = 'inductive'
+    for i in range(1,2):
         args.dataset = datasets[i]
         args.model = models[i]
-        for ii in range(1, 4):
-            args.setting = ii # setting I, II, III
-            assess_experiments(args)
+        for ii in range(1, 3):
+            args.setting = ii # setting 1 is STA; setting 2 is STM
+            assess_experiments()
+            # multibit(args)
 
-    for i in range(6):
+    args.paradigm = 'transductive'
+    for i in range(1, 2):
         args.dataset = datasets[i]
         args.model = models[i]
-        for ii in range(1,4):
+        for ii in range(1, 3):
             args.setting = ii
-            assess_insight(args) # insight2, insight3, impact of watermark lenth, watermark collision
+            assess_experiments()
+            # multibit(args)
 
-    for iii in range(args.model_num): # generate more watermarked models 
-        for i in range(6):
-            args.dataset = datasets[i]
-            args.model = models[i]
-            for ii in range(1, 4):
-                args.setting = ii
-                assess_experiments(args)
 ```
 
 ## Key hyper-parameter introductions
 We list the key hyper-parameters below, including their explanations and available options.
 
-- --dataset: load dataset; the option is ['Cora', 'DBLP', 'Photo', 'Computers', 'CS', 'Physics'] 
-- --train_val_test: split the dataset into the training graph, the val graph, the test graph; default = [0.7, 0.2, 0.1]
-- --model: load model; the option is ['GCNv2', 'SSG', 'SAGE', 'ARMA', 'GEN', 'GTF']
-- --hidden_channels: number of models; default = [600, 400, 200]
-- --setting: setting I,II,III; the option is [1,2,3]
-- --n_wm: number of bits of the watermark string; default = 200
+- --dataset: load dataset; the option is ['Cora', 'DBLP', 'CS', 'Physics', 'Blog', 'Photo'] 
+- --train_val_test: split the dataset into the training graph, the val graph, the test graph; default = [0.4, 0.3, 0.3]
+- --model: load model; the option is ['GAT', 'GTF', 'SSG', 'GCNv2', 'ARMA', 'SAGE']
+- --hidden_channels: number of models; default = [800, 200, 50]
+- --setting: setting STA,STM; the option is [1,2]
+- --n_wm: number of bits of the watermark string; default = 64
 - --model_num: the number of generated watermark models
 
 ## How to run
@@ -103,7 +100,7 @@ We list the key hyper-parameters below, including their explanations and availab
 python main.py
 ```
 
-We run all models, datasets, and Settings I, II, and III in a single pass within `main.py`.  
+We run all models, datasets, STA and STM  in a single pass within `main.py`.  
 You can modify `main.py` as needed.
 
 `model.py` contains all the model architectures used in our work, and `dataload.py` stores all the datasets we used.  
