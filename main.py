@@ -50,7 +50,6 @@ def assess_experiments():
     assess_fine_tuning(model_w, model_i, data, wm, wmk, trigger, args)
     del model_i
 
-    #assess_unlearning(model_w, data, wm, wmk, trigger, args)
     assess_overwriting(model_w, data, wm, wmk, trigger, args)
     assess_model_extract(model_w, data, wm, wmk, trigger, args)
     torch.cuda.empty_cache()
@@ -59,7 +58,7 @@ def assess_experiments():
 
 if __name__ == '__main__':
     # our methods
-    datasets = ['Cora', 'DBLP', 'CS', 'Physics', 'Blog', 'Photo']  # 'Cora', 'DBLP', 'CS', 'Physics', 'Blog', 'Flickr'
+    datasets = ['Cora', 'DBLP', 'CS', 'Physics', 'Blog', 'Photo']  # 'Cora', 'DBLP', 'CS', 'Physics', 'Blog', 'Photo'
     models = ['GAT', 'GTF', 'SSG', 'GCNv2', 'ARMA', 'SAGE']  # 'GAT', 'GTF', 'SSG', 'GCNv2', 'ARMA', 'SAGE'
 
     args.paradigm = 'inductive'
@@ -68,8 +67,8 @@ if __name__ == '__main__':
         args.model = models[i]
         for ii in range(1, 3):
             args.setting = ii
-            # assess_experiments()
-            multibit(args)
+            assess_experiments()
+            # multibit(args)
 
     args.paradigm = 'transductive'
     for i in range(1, 2):
@@ -77,8 +76,8 @@ if __name__ == '__main__':
         args.model = models[i]
         for ii in range(1, 3):
             args.setting = ii
-            #assess_experiments()
-            multibit(args)
+            assess_experiments()
+            # multibit(args)
 
 
     # for i in range(6):
@@ -95,3 +94,4 @@ if __name__ == '__main__':
     #         for ii in range(1, 4):
     #             args.setting = ii
     #             assess_experiments(args)
+
