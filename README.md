@@ -7,7 +7,7 @@ Opearting system: Ubuntu 22.04.4 LTS
 
 CPU: Intel Xeon Gold 6248R
 
-GPU: A100 with 40GB 
+GPU: A100 with 80GB 
 
 CUDA version: 12.4
 
@@ -65,22 +65,22 @@ if __name__ == '__main__':
     models = ['GAT', 'GTF', 'SSG', 'GCNv2', 'ARMA', 'SAGE']  # 'GAT', 'GTF', 'SSG', 'GCNv2', 'ARMA', 'SAGE'
 
     args.paradigm = 'inductive'
-    for i in range(1,2):
+    for i in range(6):
         args.dataset = datasets[i]
         args.model = models[i]
         for ii in range(1, 3):
             args.setting = ii # setting 1 is STA; setting 2 is STM
             assess_experiments()
-            # multibit(args)
+            
 
     args.paradigm = 'transductive'
-    for i in range(1, 2):
+    for i in range(6):
         args.dataset = datasets[i]
         args.model = models[i]
         for ii in range(1, 3):
             args.setting = ii
             assess_experiments()
-            # multibit(args)
+            
 
 ```
 
