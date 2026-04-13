@@ -146,6 +146,7 @@ def watermark_collision(args):
         with open(filename, mode='w', newline='') as file:
             csv.writer(file).writerow(headers)
             csv.writer(file).writerows(new_line.reshape(-1, 1))
+    args.results_path = results_path
 
 
 
