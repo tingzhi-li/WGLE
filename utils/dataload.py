@@ -9,9 +9,7 @@ from utils.config import SEED
 
 
 def load_data_cora(args):
-    num_train_per_class = int(args.train_val_test[0] * 2708 / 7 )
-    num_test = int(args.train_val_test[2] * 2708 )
-    dataset = Planetoid(root=args.dataset_path, name='Cora', split='random', num_train_per_class=num_train_per_class, num_test=num_test)
+    dataset = CitationFull(root=args.dataset_path, name='Cora_ML', transform=RandomNodeSplit(num_val=args.train_val_test[1], num_test=args.train_val_test[2]))
     data = dataset[0]
 
     if args.paradigm == 'transductive':
@@ -31,9 +29,7 @@ def load_data_cora(args):
 
 
 def load_data_citeseer(args):
-    num_train_per_class = int(args.train_val_test[0] * 3327 / 6)
-    num_test = int(args.train_val_test[2] * 3327)
-    dataset = Planetoid(root=args.dataset_path, name='CiteSeer', split='random', num_train_per_class=num_train_per_class,num_test=num_test)
+    dataset = CitationFull(root=args.dataset_path, name='CiteSeer', transform=RandomNodeSplit(num_val=args.train_val_test[1], num_test=args.train_val_test[2]))
     data = dataset[0]
     args.coe = 2.0
 
