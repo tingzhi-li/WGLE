@@ -107,7 +107,7 @@ def insight2(args):
 
 def watermark_collision(args):
     data = load_data(args)
-    model_o = torch.load(args.model_path + args.dataset + '/' + args.model, weights_only=False)
+    model_o = torch.load(args.model_path + args.dataset + '/' + args.model + '_' + args.paradigm, weights_only=False)
     model_o.eval()
     # generate trigger
     results_path = copy.deepcopy(args.results_path)
