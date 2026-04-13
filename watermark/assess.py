@@ -4,7 +4,7 @@ import os.path
 
 import numpy as np
 from torch_geometric.utils import subgraph
-from torch_geometric.datasets import Planetoid, AttributedGraphDataset
+from torch_geometric.datasets import Planetoid, AttributedGraphDataset, CitationFull
 from watermark.watermark import *
 from watermark.robust import *
 from utils.utils import test
@@ -99,7 +99,7 @@ def setting2(model_o, model_ind, data, args):
     new_line.append(test_acc)
 
     # embedding watermark
-    edge_index = Planetoid(root=args.dataset_path, name='CiteSeer', split='public')[0].edge_index.detach().clone().to(args.device)
+    edge_index = CitationFull(root=args.dataset_path, name='CiteSeer')[0].edge_index.detach().clone().to(args.device)
     trigger = trigger_generation(model_o, edge_index, args)
     start_time = time.time()
     wm = watermark_string_generation(args)
