@@ -29,6 +29,8 @@ def watermark_key_generation(model_o, trigger, args):
 
     if trigger.y is not None:
         mask = trigger.y[trigger.edge_index[0]] != trigger.y[trigger.edge_index[1]]
+        if args.paradigm == 'transductive':
+            mask = mask & (trigger.train_mask[trigger.edge_index[0]] & trigger.train_mask[trigger.edge_index[1]])
     else:
         mask = trigger.edge_attr
 
