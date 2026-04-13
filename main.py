@@ -68,7 +68,7 @@ if __name__ == '__main__':
         for ii in range(1, 3):
             args.setting = ii
             assess_experiments()
-            # multibit(args)
+            
 
     args.paradigm = 'transductive'
     for i in range(1, 2):
@@ -77,21 +77,12 @@ if __name__ == '__main__':
         for ii in range(1, 3):
             args.setting = ii
             assess_experiments()
-            # multibit(args)
 
 
-    # for i in range(6):
-    #     args.dataset = datasets[i]
-    #     args.model = models[i]
-    #     for ii in range(1,4):
-    #         args.setting = ii
-    #         assess_insight(args)
-    #
-    # for iii in range(args.model_num):
-    #     for i in range(6):
-    #         args.dataset = datasets[i]
-    #         args.model = models[i]
-    #         for ii in range(1, 4):
-    #             args.setting = ii
-    #             assess_experiments(args)
+    for i in range(6):
+        args.dataset = datasets[i]
+        args.model = models[i]
+        for ii in range(1,4):
+            args.setting = ii
+            assess_insight(args)
 
