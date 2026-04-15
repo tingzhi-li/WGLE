@@ -78,11 +78,20 @@ if __name__ == '__main__':
             args.setting = ii
             assess_experiments()
 
-
+    args.paradigm = 'inductive'
     for i in range(6):
         args.dataset = datasets[i]
         args.model = models[i]
         for ii in range(1, 3):
             args.setting = ii
             assess_insight(args)
+
+    args.paradigm = 'transductive'
+    for i in range(6):
+        args.dataset = datasets[i]
+        args.model = models[i]
+        for ii in range(1, 3):
+            args.setting = ii
+            assess_insight(args)
+
 
