@@ -263,7 +263,7 @@ def multibit(args):
 
 
 def assess_insight(args):
-    # insight2(args)
-    # insight3(args)
+    insight2(args)
+    insight3(args)
     multibit(args)
-    # watermark_collision(args)
+    watermark_collision(args)
