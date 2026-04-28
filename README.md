@@ -144,8 +144,7 @@ results/
 │   │   ├── fine_tuning_i.csv
 │   │   ├── overwriting.csv
 │   │   └── model_extract.csv
-│   ├── setting2/
-│   └── setting3/
+│   └── setting2/
 ├── DBLP/
 ...
 ```
