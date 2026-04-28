@@ -49,28 +49,6 @@ def load_data_citeseer(args):
 
 
 
-def load_data_pubmed(args):
-    num_train_per_class = int(args.train_val_test[0] * 19717 / 3)
-    num_test = int(args.train_val_test[2] * 19717)
-    dataset = Planetoid(root=args.dataset_path, name='PubMed', split='random', num_train_per_class=num_train_per_class, num_val=num_test)
-    data = dataset[0]
-
-    if args.paradigm == 'transductive':
-        return data.to(args.device)
-    elif args.paradigm == 'inductive':
-        edge_index = subgraph(data.train_mask, data.edge_index, relabel_nodes=True)[0]
-        train_graph = Data(x=data.x[data.train_mask], y=data.y[data.train_mask], edge_index=edge_index)
-        edge_index = subgraph(data.val_mask, data.edge_index, relabel_nodes=True)[0]
-        val_graph = Data(x=data.x[data.val_mask], y=data.y[data.val_mask], edge_index=edge_index)
-        edge_index = subgraph(data.test_mask, data.edge_index, relabel_nodes=True)[0]
-        test_graph = Data(x=data.x[data.test_mask], y=data.y[data.test_mask], edge_index=edge_index)
-
-        return train_graph.to(args.device), val_graph.to(args.device), test_graph.to(args.device)
-    else:
-        raise ValueError('Error: Wrong paradigm!')
-
-
-
 def load_data_dblp(args):
     dataset = CitationFull(root=args.dataset_path, name='DBLP', transform=RandomNodeSplit(num_val=args.train_val_test[1], num_test=args.train_val_test[2]))
     data = dataset[0]
@@ -166,24 +144,6 @@ def load_data_physics(args):
 
 
 
-def load_data_facebook(args):
-    dataset = FacebookPagePage(root=args.dataset_path, transform=RandomNodeSplit(num_val=args.train_val_test[1], num_test=args.train_val_test[2]))
-    data = dataset[0]
-
-    if args.paradigm == 'transductive':
-        return data.to(args.device)
-    elif args.paradigm == 'inductive':
-        edge_index = subgraph(data.train_mask, data.edge_index, relabel_nodes=True)[0]
-        train_graph = Data(x=data.x[data.train_mask], y=data.y[data.train_mask], edge_index=edge_index)
-        edge_index = subgraph(data.val_mask, data.edge_index, relabel_nodes=True)[0]
-        val_graph = Data(x=data.x[data.val_mask], y=data.y[data.val_mask], edge_index=edge_index)
-        edge_index = subgraph(data.test_mask, data.edge_index, relabel_nodes=True)[0]
-        test_graph = Data(x=data.x[data.test_mask], y=data.y[data.test_mask], edge_index=edge_index)
-        return train_graph.to(args.device), val_graph.to(args.device), test_graph.to(args.device)
-    else:
-        raise ValueError('Error: Wrong paradigm!')
-
-
 def load_data_blog(args):
     dataset = AttributedGraphDataset(root=args.dataset_path, name='BlogCatalog', transform=RandomNodeSplit(num_val=args.train_val_test[1], num_test=args.train_val_test[2]))
     data = dataset[0]
@@ -203,25 +163,6 @@ def load_data_blog(args):
 
 
 
-def load_data_flickr(args):
-    dataset = AttributedGraphDataset(root=args.dataset_path, name='Flickr', transform=RandomNodeSplit(num_val=args.train_val_test[1], num_test=args.train_val_test[2]))
-    data = dataset[0]
-    data.x = data.x.to_dense().to(torch.float32)
-
-    if args.paradigm == 'transductive':
-        return data.to(args.device)
-    elif args.paradigm == 'inductive':
-        edge_index = subgraph(data.train_mask, data.edge_index, relabel_nodes=True)[0]
-        train_graph = Data(x=data.x.to_dense()[data.train_mask], y=data.y.to_dense()[data.train_mask], edge_index=edge_index)
-        edge_index = subgraph(data.val_mask, data.edge_index, relabel_nodes=True)[0]
-        val_graph = Data(x=data.x.to_dense()[data.val_mask], y=data.y.to_dense()[data.val_mask], edge_index=edge_index)
-        edge_index = subgraph(data.test_mask, data.edge_index, relabel_nodes=True)[0]
-        test_graph = Data(x=data.x.to_dense()[data.test_mask], y=data.y.to_dense()[data.test_mask], edge_index=edge_index)
-        return train_graph.to(args.device), val_graph.to(args.device), test_graph.to(args.device)
-    else:
-        raise ValueError('Error: Wrong paradigm!')
-
-
 def load_data(args):
     torch.manual_seed(SEED)
     if args.dataset == 'Cora':
@@ -238,12 +179,8 @@ def load_data(args):
         data = load_data_physics(args)
     elif args.dataset == 'CiteSeer':
         data = load_data_citeseer(args)
-    elif args.dataset == 'PubMed':
-        data = load_data_pubmed(args)
     elif args.dataset == 'Blog':
         data = load_data_blog(args)
-    elif args.dataset == 'Flickr':
-        data = load_data_flickr(args)
     else:
         raise ValueError('Error: Unknow dataset!')
     torch.seed()
