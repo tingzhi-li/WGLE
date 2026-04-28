@@ -173,5 +173,5 @@ All datasets are available for automatic download at runtime, or can be download
 | Photo  | https://github.com/shchur/gnn-benchmark/raw/master/data/npz/|
 | CS| https://github.com/shchur/gnn-benchmark/raw/master/data/npz/ |
 |Physics| https://github.com/shchur/gnn-benchmark/raw/master/data/npz/ |
-|Blog | https://drive.usercontent.google.com/download?id={178PqGqh67RUYMMP6-SoRHDoIBh8ku5FS}&confirm=t |
+|Blog | https://drive.usercontent.google.com/download?id=178PqGqh67RUYMMP6-SoRHDoIBh8ku5FS&confirm=t |
 | CiteSeer| https://github.com/abojchevski/graph2gauss/raw/master/data/ |
