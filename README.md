@@ -30,8 +30,8 @@ We use RBOVG and WGB as baselines and EaaW as a strawman. Their titles and corre
 
 | Method | Paper | Code |
 |---------|---------|---------|
-| WGB   | Watermarking Graph Neural Networks based on Backdoor Attacks   | -   |
-| RBOVG   | Revisiting Black-box Ownership Verification for Graph Neural Networks   | https://github.com/rkzhou/GNN_OwnVer.git   |
+| Canary   | Black-Box Verification for GNN Ownership via Decision Boundary Fingerprints  | -   |
+| GDOA   | A Data Ownership Authentication Method for Graph Neural Networks via Clean-Label Backdoor  | https://github.com/Xing-code66/GDOA  |
 | EaaW | Explanation as a Watermark: Towards Harmless and Multi-bit Model Ownership Verification via Watermarking Feature Attribution | https://github.com/shaoshuo-ss/EaaW.git |
 
 ## Repo Contents
@@ -117,15 +117,8 @@ The default decision threshold is set to 0.75, but you may try other thresholds 
 
 ```
 python evaluation.py
-```
-
-You can run `WGB.py` to test the performance of the baseline WGB.  
-Please note that this is our reimplementation based on the authors’ paper, and it may differ from the original results reported in their publication.
 
 ```
-python WGB.py
-```
-
 
 After running, we can found the folder:
 
