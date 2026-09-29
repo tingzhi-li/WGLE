@@ -46,12 +46,12 @@ def assess_experiments():
     model_w, wm, wmk, trigger, model_i = setting(copy.deepcopy(model_o), copy.deepcopy(model_i), data, args)
 
     # robust
-    # assess_pruning(model_w, model_i, data, wm, wmk, trigger, args)
-    # assess_fine_tuning(model_w, model_i, data, wm, wmk, trigger, args)
-    # assess_adv_fine_tuning(model_w, data, wm, wmk, trigger, args)
+    assess_pruning(model_w, model_i, data, wm, wmk, trigger, args)
+    assess_fine_tuning(model_w, model_i, data, wm, wmk, trigger, args)
+    assess_adv_fine_tuning(model_w, data, wm, wmk, trigger, args)
 
     assess_overwriting(model_w, data, wm, wmk, trigger, args)
-    # assess_model_extract(model_w, data, wm, wmk, trigger, args)
+    assess_model_extract(model_w, data, wm, wmk, trigger, args)
     torch.cuda.empty_cache()
 
 
@@ -61,22 +61,22 @@ if __name__ == '__main__':
     datasets = ['Cora', 'DBLP', 'Photo', 'CS', 'Physics', 'Blog']  # 'Cora', 'DBLP', 'CS', 'Physics', 'Blog', 'Photo'
     models = ['GAT', 'GTF', 'SAGE', 'SSG', 'GCNv2', 'ARMA']  # 'GAT', 'GTF', 'SSG', 'GCNv2', 'ARMA', 'SAGE'
 
-    # args.paradigm = 'inductive'
-    # for i in range(6):
-    #     args.dataset = datasets[i]
-    #     args.model = models[i]
-    #     for ii in range(1, 3):
-    #         args.setting = ii
-    #         assess_experiments()
+    args.paradigm = 'inductive'
+    for i in range(6):
+        args.dataset = datasets[i]
+        args.model = models[i]
+        for ii in range(1, 3):
+            args.setting = ii
+            assess_experiments()
             
 
-    # args.paradigm = 'transductive'
-    # for i in range(6):
-    #     args.dataset = datasets[i]
-    #     args.model = models[i]
-    #     for ii in range(1, 3):
-    #         args.setting = ii
-    #         assess_experiments()
+    args.paradigm = 'transductive'
+    for i in range(6):
+        args.dataset = datasets[i]
+        args.model = models[i]
+        for ii in range(1, 3):
+            args.setting = ii
+            assess_experiments()
     
     
     args.paradigm = 'inductive'
