@@ -19,7 +19,7 @@ def parse_args():
     parser.add_argument('--lr', type=float, default=1e-4)
     parser.add_argument('--weight_decay', type=float, default=1e-4)
     parser.add_argument('--trigger_epochs', type=int, default=201)
-    parser.add_argument('--trigger_lr', type=float, default=1e-4)
+    parser.add_argument('--trigger_lr', type=float, default=5e-4)
     parser.add_argument('--wm_lr', type=float, default=5e-5)
 
     parser.add_argument('--setting', type=int, default=1) # 1, 2
@@ -29,6 +29,8 @@ def parse_args():
     parser.add_argument('--coe', type=float, default=5.0)
     parser.add_argument('--model_num', type=int, default=100)
     parser.add_argument('--results_path', type=str, default='./results/')
+    parser.add_argument('--overwriting_rounds', type=int, default=5)
+    parser.add_argument('--args.trigger_loss2_coe', type=float, default = 1e-4)
 
     args = parser.parse_args()
     args.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
