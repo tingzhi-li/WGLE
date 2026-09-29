@@ -222,7 +222,10 @@ def assess_fine_tuning(model_w, model_ind, data, wm, wmk, trigger, args):
 def assess_overwriting(model, data, wm, wmk, trigger, args):
     model = copy.deepcopy(model)
     filename = args.results_path + args.dataset + '/' + args.paradigm + '/setting' + str(args.setting) + '/' + 'overwriting.csv'
-    headers =  ['original train_acc', 'original test_acc', 'original HMS', 'overwriting train_acc', 'overwriting test_acc', 'overwriting HMS']
+    overwriting_rounds = getattr(args, 'overwriting_rounds', 5)
+    headers =  ['original train_acc', 'original test_acc', 'original HMS']
+    for r in range(overwriting_rounds + 1):
+        headers += [f'overwriting_r{r} train_acc', f'overwriting_r{r} test_acc', f'overwriting_r{r} HMS']
     if not os.path.isfile(filename):
         with open(filename, mode='w', newline='') as file:
             csv.writer(file).writerow(headers)
@@ -235,18 +238,24 @@ def assess_overwriting(model, data, wm, wmk, trigger, args):
     with open(filename, 'a') as file:
         file.write(f'{train_acc:.4f}, {test_acc:.4f}, {hms:.4f},')
 
-    wm_0 = watermark_string_generation(args)
-    edge_index = AttributedGraphDataset(root=args.dataset_path, name='Wiki')[0].edge_index.detach().clone().to(args.device)
-    trigger_0 = trigger_generation(model, edge_index, args)
-    wmk_0 = watermark_key_generation(model, trigger_0, args)
-    model_wm = watermark_embedding_2(model, data, wm_0, wmk_0, trigger_0, args)
-    train_acc, test_acc = test(model_wm, data, args)
-    print(f'Accuracy after overwriting: Train: {train_acc:.4f}, Test: {test_acc:.4f}')
-    hms = watermark_verification(model_wm, wm, wmk, trigger)
-    print(f'HMS after overwriting:{hms:.4f}')
-    print('------------------------------------')
-    with open(filename, 'a') as file:
-        file.write(f'{train_acc:.4f}, {test_acc:.4f}, {hms:.4f}\n')
+    for round_idx in range(overwriting_rounds):
+        if round_idx > 0:
+            model = model_wm
+        wm_0 = watermark_string_generation(args)
+        edge_index = AttributedGraphDataset(root=args.dataset_path, name='Wiki')[0].edge_index.detach().clone().to(args.device)
+        trigger_0 = trigger_generation(model, edge_index, args)
+        wmk_0 = watermark_key_generation(model, trigger_0, args)
+        model_wm = watermark_embedding_2(model, data, wm_0, wmk_0, trigger_0, args)
+        train_acc, test_acc = test(model_wm, data, args)
+        print(f'Accuracy after overwriting: Train: {train_acc:.4f}, Test: {test_acc:.4f}')
+        hms = watermark_verification(model_wm, wm, wmk, trigger)
+        print(f'HMS after overwriting:{hms:.4f}')
+        print('------------------------------------')
+        with open(filename, 'a') as file:
+            if round_idx < overwriting_rounds - 1:
+                file.write(f'{train_acc:.4f}, {test_acc:.4f}, {hms:.4f},')
+            else:
+                file.write(f'{train_acc:.4f}, {test_acc:.4f}, {hms:.4f}\n')
 
     del edge_index
     del trigger_0
@@ -256,16 +265,16 @@ def assess_overwriting(model, data, wm, wmk, trigger, args):
 
 
 
-def assess_unlearning(model_w, data, wm, wmk, trigger, args):
-    filename = args.results_path + args.dataset + '/' + args.paradigm + '/setting' + str(args.setting) + '/' + 'unlearning.csv'
+def assess_adv_fine_tuning(model_w, data, wm, wmk, trigger, args):
+    filename = args.results_path + args.dataset + '/' + args.paradigm + '/setting' + str(args.setting) + '/' + 'adv_fine_tuning.csv'
     headers = [item for i in range(201) for item in [f'{i}test_acc']] + [item for i in range(201) for item in [f'{i}hms']]
     if not os.path.isfile(filename):
         with open(filename, mode='w', newline='') as file:
             csv.writer(file).writerow(headers)
 
-    _, tac_list, hms_list = unlearning(copy.deepcopy(model_w), data, wm, wmk, trigger, args, args.lr / 2)
-    print(f'Accuracy after unlearning: Train: {tac_list[-1]:.4f}')
-    print(f'HMS after unlearning:{hms_list[-1]:.4f}')
+    _, tac_list, hms_list = adv_fine_tuning(copy.deepcopy(model_w), data, wm, wmk, trigger, args, args.lr/2)
+    print(f'Accuracy after adversarial fine-tuning: Train: {tac_list[-1]:.4f}')
+    print(f'HMS after adversarial fine-tuning:{hms_list[-1]:.4f}')
     print('------------------------------------')
     tac_list = np.round(np.array(tac_list), 2)
     hms_list = np.round(np.array(hms_list), 3)
@@ -371,6 +380,7 @@ def assess_model_extract(model, data, wm, wmk, trigger, args):
     # print('------------------------------------')
     # with open(filename, 'a') as file:
     #     file.write(f'{train_acc:.4f}, {test_acc:.4f}, {hms:.4f} \n')
+
 
 
 

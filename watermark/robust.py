@@ -59,7 +59,7 @@ def fine_tuning(model, data, wm, wmk, trigger, args, lr=5e-5):
     return model, tac_list, bcr_list
 
 
-def unlearning(model, data, wm, wmk, trigger, args, lr=5e-5):
+def adv_fine_tuning(model, data, wm, wmk, trigger, args, lr=5e-5):
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=128, eta_min=1e-5)
     tac_list = []
@@ -68,6 +68,15 @@ def unlearning(model, data, wm, wmk, trigger, args, lr=5e-5):
     bcr = watermark_verification(model, wm, wmk, trigger)
     tac_list.append(test_acc)
     bcr_list.append(bcr)
+
+    # Pre-generate random perturbation targets (fixed 0/1 per edge)
+    if args.paradigm == 'transductive':
+        disturb = torch.randint(0, 2, (data.edge_index.size(1),), dtype=torch.float32).to(args.device)
+    elif args.paradigm == 'inductive':
+        disturb = torch.randint(0, 2, (data[1].edge_index.size(1),), dtype=torch.float32).to(args.device)
+    else:
+        raise ValueError('Error: Wrong paradigm!')
+
     for epoch in range(200):
         model.train()
         optimizer.zero_grad()
@@ -75,12 +84,18 @@ def unlearning(model, data, wm, wmk, trigger, args, lr=5e-5):
         if args.paradigm == 'transductive':
             y = model(data.x, data.edge_index)
             loss1 = F.cross_entropy(y[data.val_mask], data.y[data.val_mask])
-            loss2 = torch.mean(torch.abs(LDDE(F.softmax(y, dim=1), data.x, data.edge_index)))
+            # Calculate LDDE values for all edges
+            v = LDDE(F.softmax(y, dim=1), data.x, data.edge_index)
+            # Fit LDDE values toward random targets — destroys watermark
+            loss2 = F.binary_cross_entropy_with_logits(v.flatten(), disturb)
             loss = loss1 + loss2
         elif args.paradigm == 'inductive':
             y = model(data[1].x, data[1].edge_index)
             loss1 = F.cross_entropy(y, data[1].y)
-            loss2 = torch.mean(torch.abs(LDDE(F.softmax(y, dim=1), data[1].x, data[1].edge_index)))
+            # Calculate LDDE values for all edges
+            v = LDDE(F.softmax(y, dim=1), data[1].x, data[1].edge_index)
+            # Fit LDDE values toward random targets — destroys watermark
+            loss2 = F.binary_cross_entropy_with_logits(v.flatten(), disturb)
             loss = loss1 + loss2
         else:
             raise ValueError('Error: Wrong paradigm!')
@@ -93,7 +108,7 @@ def unlearning(model, data, wm, wmk, trigger, args, lr=5e-5):
         tac_list.append(test_acc)
         bcr_list.append(bcr)
         if epoch % 20 == 0:
-            print(f"Unlearning Loss: {loss.item():.4f}, Train Acc: {train_acc}, Test Acc: {test_acc}, HMS: {bcr:.4f} ")
+            print(f"Adversarial Fine-tuning Epoch: {epoch}, Loss: {loss.item():.4f}, Train Acc: {train_acc:.4f}, Test Acc: {test_acc:.4f}, HMS: {bcr:.4f}")
     return model, tac_list, bcr_list
 
 

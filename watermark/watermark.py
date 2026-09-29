@@ -74,7 +74,7 @@ def trigger_generation(model_o, edge_index, args):
         optimizer_data.zero_grad()
         loss1 = torch.mean(torch.abs(v))
         loss2 = torch.mean(1 / (1 - torch.abs(F.cosine_similarity(F.hardtanh(x)[edge_index[0, mask]], F.hardtanh(x)[edge_index[1, mask]]))))
-        loss = loss1 + 1e-4 * loss2
+        loss = loss1 + getattr(args, 'trigger_loss2_coe', 1e-4) * loss2
         loss.backward()
         optimizer_data.step()
 
@@ -104,7 +104,7 @@ def trigger_generation(model_o, edge_index, args):
     node_embeddings = node2vec.embedding.weight.data
     edge_embeddings = torch.abs(node_embeddings[edge_index[0]] - node_embeddings[edge_index[1]])
     edge_embeddings = edge_embeddings.detach().cpu().numpy()
-    dbscan = DBSCAN(eps=1.5, min_samples=10)
+    dbscan = DBSCAN(eps=10, min_samples=3)
     edge_labels = dbscan.fit_predict(edge_embeddings)
     edge_attr = torch.from_numpy(edge_labels == -1).to(args.device)
     
